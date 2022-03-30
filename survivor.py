@@ -2,9 +2,9 @@ import pandas as pd
 from tqdm import tqdm
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
-schedule_grid_path = '~/GitHub/wnfl-survivor/schedule_grid.csv'
-schedule_processed_path = '~/GitHub/wnfl-survivor/schedule_processed.csv'
-rank_path = '~/GitHub/wnfl-survivor/ranks.csv'
+schedule_grid_path = '~/GitHub/nfl-survivor/data/schedule_grid.csv'
+schedule_processed_path = '~/GitHub/nfl-survivor/data/schedule_processed.csv'
+rank_path = '~/GitHub/nfl-survivor/data/ranks.csv'
 
 schedule_raw = pd.read_csv(schedule_grid_path, index_col=0)
 
