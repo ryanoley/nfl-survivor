@@ -2,12 +2,6 @@ import pandas as pd
 from tqdm import tqdm
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
-schedule_grid_path = '~/GitHub/nfl-survivor/data/schedule_grid.csv'
-schedule_processed_path = '~/GitHub/nfl-survivor/data/schedule_processed.csv'
-rank_path = '~/GitHub/nfl-survivor/data/ranks.csv'
-
-schedule_raw = pd.read_csv(schedule_grid_path, index_col=0)
-
 
 def process_sched_grid(schedule_raw):
     sdata = []
@@ -171,56 +165,61 @@ def simulate_random(inp_data, max_col='score', week_max=18,
     return pick_df.sort_values('week').reset_index(drop=True)
 
 
-sched = pd.read_csv(schedule_processed_path, parse_dates=['date'])
-sched = get_days_off(sched)
-sched['days_off_diff'] = sched.t1_days_off - sched.t2_days_off
+if __name__ == '__main__':
+    schedule_grid_path = '~/GitHub/nfl-survivor/data/schedule_grid.csv'
+    schedule_processed_path = '~/GitHub/nfl-survivor/data/schedule_processed.csv'
+    rank_path = '~/GitHub/nfl-survivor/data/ranks.csv'
 
-std_scaler = StandardScaler()
-mm_scaler = MinMaxScaler()
+    schedule_raw = pd.read_csv(schedule_grid_path, index_col=0)
 
-rankings = pd.read_csv(rank_path)
-rankings['elo_scaled'] = std_scaler.fit_transform(rankings[['elo']])
-rankings['fpi_scaled'] = std_scaler.fit_transform(rankings[['FPI']])
+    sched = pd.read_csv(schedule_processed_path, parse_dates=['date'])
+    sched = get_days_off(sched)
+    sched['days_off_diff'] = sched.t1_days_off - sched.t2_days_off
 
-data = pd.merge(sched, rankings[['team', 'Rank', 'elo_scaled', 'fpi_scaled']],
-                left_on='t1',
-                right_on='team')
-data.rename(columns={'elo_scaled': 't1_elo', 'fpi_scaled': 't1_fpi',
-                     'Rank': 't1_rank'},
-            inplace=True)
-data.drop(columns=['team'], inplace=True)
+    std_scaler = StandardScaler()
+    mm_scaler = MinMaxScaler()
 
+    rankings = pd.read_csv(rank_path)
+    rankings['elo_scaled'] = std_scaler.fit_transform(rankings[['elo']])
+    rankings['fpi_scaled'] = std_scaler.fit_transform(rankings[['FPI']])
 
-data = pd.merge(data, rankings[['team', 'Rank', 'elo_scaled', 'fpi_scaled']],
-                left_on='t2',
-                right_on='team')
-data.rename(columns={'elo_scaled': 't2_elo', 'fpi_scaled': 't2_fpi',
-                     'Rank': 't2_rank'},
-            inplace=True)
-data.drop(columns=['team'], inplace=True)
+    data = pd.merge(sched, rankings[['team', 'Rank', 'elo_scaled', 'fpi_scaled']],
+                    left_on='t1',
+                    right_on='team')
+    data.rename(columns={'elo_scaled': 't1_elo', 'fpi_scaled': 't1_fpi',
+                         'Rank': 't1_rank'},
+                inplace=True)
+    data.drop(columns=['team'], inplace=True)
 
+    data = pd.merge(data, rankings[['team', 'Rank', 'elo_scaled', 'fpi_scaled']],
+                    left_on='t2',
+                    right_on='team')
+    data.rename(columns={'elo_scaled': 't2_elo', 'fpi_scaled': 't2_fpi',
+                         'Rank': 't2_rank'},
+                inplace=True)
+    data.drop(columns=['team'], inplace=True)
 
-jack_picks = ['TB', 'ARI', 'LV', 'BUF', 'MIN', 'KC', 'GB']
-data_picks = ['LAR', 'GB', 'BAL', 'CIN', 'TB', 'IND', 'ARI', 'KC']
+    jack_picks = ['TB', 'ARI', 'LV', 'BUF', 'MIN', 'KC', 'GB']
+    data_picks = ['LAR', 'GB', 'BAL', 'CIN', 'TB', 'IND', 'ARI', 'KC']
 
-HOME_BOOST = .75
-SHORT_WEEK_PENATLY = .66
-WORST_TEAMS_PENALTY = .4
+    HOME_BOOST = .75
+    SHORT_WEEK_PENATLY = .66
+    WORST_TEAMS_PENALTY = .4
 
-sim_data = prep_data(data, HOME_BOOST, SHORT_WEEK_PENATLY, WORST_TEAMS_PENALTY)
+    sim_data = prep_data(data, HOME_BOOST, SHORT_WEEK_PENATLY, WORST_TEAMS_PENALTY)
 
-greedy = simulate_greedy(sim_data, 'score', picked_teams_inp=data_picks,
-                         bottom_up=False)
+    greedy = simulate_greedy(sim_data, 'score', picked_teams_inp=data_picks,
+                             bottom_up=False)
 
-bu_greedy = simulate_greedy(sim_data, 'score', picked_teams_inp=data_picks,
-                            bottom_up=True)
+    bu_greedy = simulate_greedy(sim_data, 'score', picked_teams_inp=data_picks,
+                                bottom_up=True)
 
-sims = {}
-for i in tqdm(range(10000)):
-    try:
-        picks = simulate_random(sim_data, 'score', top_n=3,
-                                picked_teams_inp=data_picks)
-    except:
-        continue
-    if picks.score.sum() > 155:
-        sims[picks.score.sum()] = picks
+    sims = {}
+    for i in tqdm(range(10000)):
+        try:
+            picks = simulate_random(sim_data, 'score', top_n=3,
+                                    picked_teams_inp=data_picks)
+        except:
+            continue
+        if picks.score.sum() > 155:
+            sims[picks.score.sum()] = picks
