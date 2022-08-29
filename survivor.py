@@ -12,7 +12,7 @@ def process_sched_grid(schedule_raw):
             if t2.find('@') == -1 or t2 == 'BYE':
                 continue
             t2 = t2.replace('@', '')
-            sdata.append({'week': i, 't1': t1, 't2': t2, 'ht': t2})
+            sdata.append({'week': i + 1, 't1': t1, 't2': t2, 'ht': t2})
     sched = pd.DataFrame(sdata)
     return sched
 
@@ -42,10 +42,10 @@ def get_days_off(sched):
     return sched
 
 
-def prep_data(inp_data, HOME_BOOST = 1, SHORT_WEEK_PENATLY= 1,
-              WORST_TEAMS_PENALTY = .3):
+def prep_data(inp_data, HOME_BOOST = 1, SHORT_WEEK_PENATLY = 1,
+              WORST_TEAMS_PENALTY = .3, INTL_PRIOR_PENALTY = .5):
     data = inp_data.copy()
-    # Boost home team and hurt 4 day turn arounds
+    # Boost home team, hurt 4 day turn arounds, and prior intl
     data['t2_fpi'] += HOME_BOOST
     data['t2_elo'] += HOME_BOOST
 
@@ -53,6 +53,11 @@ def prep_data(inp_data, HOME_BOOST = 1, SHORT_WEEK_PENATLY= 1,
     data.loc[data.t1_days_off == 4, 't1_elo'] -= SHORT_WEEK_PENATLY
     data.loc[data.t2_days_off == 4, 't2_fpi'] -= SHORT_WEEK_PENATLY
     data.loc[data.t2_days_off == 4, 't2_elo'] -= SHORT_WEEK_PENATLY
+
+    data.loc[data.t1 == data.intl_prior, 't1_fpi'] -= INTL_PRIOR_PENALTY
+    data.loc[data.t1 == data.intl_prior, 't1_elo'] -= INTL_PRIOR_PENALTY
+    data.loc[data.t2 == data.intl_prior, 't2_fpi'] -= INTL_PRIOR_PENALTY
+    data.loc[data.t2 == data.intl_prior, 't2_elo'] -= INTL_PRIOR_PENALTY
 
     # Calculate diffs and  final score
     data['elo_diff'] = data.t1_elo - data.t2_elo
@@ -90,6 +95,9 @@ def simulate_greedy(inp_data, max_col='score', week_max=18,
         rd_data = rd_data[~((rd_data.t2.isin(output_teams)) &
                             (rd_data.score < 0))]
         rd_data = rd_data[~rd_data.week.isin(picked_weeks)]
+
+        if len(rd_data) == 0:
+            continue
 
         grp = rd_data.groupby('week')
         week_scores = grp['abs_score'].max().sort_values(ascending=bottom_up)
@@ -199,27 +207,28 @@ if __name__ == '__main__':
                 inplace=True)
     data.drop(columns=['team'], inplace=True)
 
-    jack_picks = ['TB', 'ARI', 'LV', 'BUF', 'MIN', 'KC', 'GB']
-    data_picks = ['LAR', 'GB', 'BAL', 'CIN', 'TB', 'IND', 'ARI', 'KC']
-
     HOME_BOOST = .75
     SHORT_WEEK_PENATLY = .66
     WORST_TEAMS_PENALTY = .4
+    INTL_PRIOR_PENALTY = .5
 
-    sim_data = prep_data(data, HOME_BOOST, SHORT_WEEK_PENATLY, WORST_TEAMS_PENALTY)
+    sim_data = prep_data(data, HOME_BOOST, SHORT_WEEK_PENATLY,
+                         WORST_TEAMS_PENALTY, INTL_PRIOR_PENALTY)
 
-    greedy = simulate_greedy(sim_data, 'score', picked_teams_inp=data_picks,
+    m1_picks = []
+
+    greedy = simulate_greedy(sim_data, 'score', picked_teams_inp=m1_picks,
                              bottom_up=False)
 
-    bu_greedy = simulate_greedy(sim_data, 'score', picked_teams_inp=data_picks,
+    bu_greedy = simulate_greedy(sim_data, 'score', picked_teams_inp=m1_picks,
                                 bottom_up=True)
 
     sims = {}
     for i in tqdm(range(10000)):
         try:
             picks = simulate_random(sim_data, 'score', top_n=3,
-                                    picked_teams_inp=data_picks)
+                                    picked_teams_inp=m1_picks)
         except:
             continue
-        if picks.score.sum() > 155:
+        if picks.score.sum() > 115:
             sims[picks.score.sum()] = picks
