@@ -1,33 +1,33 @@
-﻿team_long_name,team,Rank,FPI,elo_name,elo
-Buffalo Bills,BUF,1,9.4,Bills,1669
-Green Bay Packers,GB,2,8.8,Packers,1645
-Los Angeles Rams,LAR,3,7.7,Rams,1662
-Kansas City Chiefs,KC,4,7.6,Chiefs,1701
-Tampa Bay Buccaneers,TB,5,7.4,Buccaneers,1634
-Dallas Cowboys,DAL,6,7.2,Cowboys,1600
-Los Angeles Chargers,LAC,7,6.2,Chargers,1513
-Indianapolis Colts,IND,8,4.2,Colts,1529
-Arizona Cardinals,ARI,9,4.1,Cardinals,1492
-Cleveland Browns,CLE,10,3.5,Browns,1461
-Baltimore Ravens,BAL,11,3.3,Ravens,1519
-Denver Broncos,DEN,12,3.3,Broncos,1418
-Minnesota Vikings,MIN,13,3.2,Vikings,1511
-Las Vegas Raiders,LV,14,2.8,Raiders,1467
-New England Patriots,NE,15,2.2,Patriots,1553
-Cincinnati Bengals,CIN,16,1.1,Bengals,1592
-Tennessee Titans,TEN,17,0.9,Titans,1564
-Philadelphia Eagles,PHI,18,-0.1,Eagles,1493
-New Orleans Saints,NO,19,-0.9,Saints,1538
-Washington,WAS,20,-1.5,Washington,1439
-Miami Dolphins,MIA,21,-1.6,Dolphins,1548
-New York Giants,NYG,22,-4.1,Giants,1391
-Detroit Lions,DET,23,-4.3,Lions,1324
-San Francisco 49ers,SF,24,-6.1,49ers,1615
-Carolina Panthers,CAR,25,-7.5,Panthers,1337
-Pittsburgh Steelers,PIT,26,-7.5,Steelers,1481
-Seattle Seahawks,SEA,27,-7.9,Seahawks,1527
-Jacksonville Jaguars,JAC,28,-8.2,Jaguars,1276
-Atlanta Falcons,ATL,29,-11.6,Falcons,1374
-Houston Texans,HOU,30,-12,Texans,1348
-New York Jets,NYJ,31,-12.8,Jets,1280
-Chicago Bears,CHI,32,-13.2,Bears,1407
+team_long_name,fpi,rank,elo,team
+Kansas City Chiefs,6.2,1,1733,KC
+Buffalo Bills,5.9,2,1661,BUF
+Cincinnati Bengals,4.7,3,1688,CIN
+Philadelphia Eagles,4.5,4,1677,PHI
+San Francisco 49ers,3.6,5,1644,SF
+Miami Dolphins,3.3,6,1521,MIA
+Los Angeles Chargers,3.3,7,1535,LAC
+Baltimore Ravens,2.9,8,1599,BAL
+New York Jets,2.8,9,1386,NYJ
+Dallas Cowboys,2.8,10,1631,DAL
+Detroit Lions,1.4,11,1527,DET
+Jacksonville Jaguars,1.2,12,1531,JAC
+Cleveland Browns,1.2,13,1485,CLE
+Denver Broncos,0.6,14,1379,DEN
+Seattle Seahawks,0.3,15,1455,SEA
+Minnesota Vikings,0.2,16,1534,MIN
+Pittsburgh Steelers,-0.2,17,1519,PIT
+New England Patriots,-0.3,18,1500,NE
+New York Giants,-0.5,19,1508,NYG
+New Orleans Saints,-1.3,20,1485,NO
+Atlanta Falcons,-2.1,21,1331,ATL
+Tennessee Titans,-2.1,22,1465,TEN
+Chicago Bears,-2.2,23,1332,CHI
+Green Bay Packers,-2.3,24,1515,GB
+Las Vegas Raiders,-2.4,25,1406,LV
+Washington Commanders,-3.0,26,1492,WAS
+Carolina Panthers,-3.5,27,1485,CAR
+Los Angeles Rams,-3.5,28,1469,LAR
+Indianapolis Colts,-4.5,29,1381,IND
+Houston Texans,-4.7,30,1307,HOU
+Tampa Bay Buccaneers,-4.9,31,1479,TB
+Arizona Cardinals,-7.3,32,1337,ARI

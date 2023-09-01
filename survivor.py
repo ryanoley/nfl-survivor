@@ -5,8 +5,8 @@ from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
 def process_sched_grid(schedule_raw):
     sdata = []
-    for i, c in enumerate(schedule_raw.columns):
-        for matchup in schedule_raw[c].iteritems():
+    for i, col in enumerate(schedule_raw.columns):
+        for matchup in schedule_raw[col].iteritems():
             t1 = matchup[0]
             t2 = matchup[1]
             if t2.find('@') == -1 or t2 == 'BYE':
@@ -49,10 +49,10 @@ def prep_data(inp_data, HOME_BOOST = 1, SHORT_WEEK_PENATLY = 1,
     data['t2_fpi'] += HOME_BOOST
     data['t2_elo'] += HOME_BOOST
 
-    data.loc[data.t1_days_off == 4, 't1_fpi'] -= SHORT_WEEK_PENATLY
-    data.loc[data.t1_days_off == 4, 't1_elo'] -= SHORT_WEEK_PENATLY
-    data.loc[data.t2_days_off == 4, 't2_fpi'] -= SHORT_WEEK_PENATLY
-    data.loc[data.t2_days_off == 4, 't2_elo'] -= SHORT_WEEK_PENATLY
+    data.loc[data.t1_days_off <= 6, 't1_fpi'] -= SHORT_WEEK_PENATLY
+    data.loc[data.t1_days_off <= 6, 't1_elo'] -= SHORT_WEEK_PENATLY
+    data.loc[data.t2_days_off <= 6, 't2_fpi'] -= SHORT_WEEK_PENATLY
+    data.loc[data.t2_days_off <= 6, 't2_elo'] -= SHORT_WEEK_PENATLY
 
     data.loc[data.t1 == data.intl_prior, 't1_fpi'] -= INTL_PRIOR_PENALTY
     data.loc[data.t1 == data.intl_prior, 't1_elo'] -= INTL_PRIOR_PENALTY
@@ -173,62 +173,86 @@ def simulate_random(inp_data, max_col='score', week_max=18,
     return pick_df.sort_values('week').reset_index(drop=True)
 
 
+def main():
+    import argparse
+
+    ##################################
+    arg_parser = argparse.ArgumentParser()
+    arg_parser.add_argument(
+        '-f', '--format_schedule', action='store_true', help='Format raw schedule')
+    arg_parser.add_argument(
+        '-s', '--simulate', action='store_true', help='Simulate best selections')
+    args = arg_parser.parse_args()
+    ##################################
+
+    if args.format_schedule:
+        schedule_grid_path = '~/repos/nfl-survivor/data/schedule_grid.csv'
+        formatted_output_path = '~/repos/nfl-survivor/data/schedule_processed.csv'
+        schedule_raw = pd.read_csv(schedule_grid_path, index_col=0)
+        formatted_schedule = process_sched_grid(schedule_raw)
+        formatted_schedule.to_csv(formatted_output_path)
+    elif args.simulate:
+        formatted_schedule_path = '~/repos/nfl-survivor/data/schedule_processed.csv'
+        rank_path = '~/repos/nfl-survivor/data/ranks.csv'
+
+        sched = pd.read_csv(formatted_schedule_path, parse_dates=['date'])
+        sched = get_days_off(sched)
+        sched['days_off_diff'] = sched.t1_days_off - sched.t2_days_off
+
+        std_scaler = StandardScaler()
+        mm_scaler = MinMaxScaler()
+
+        rankings = pd.read_csv(rank_path)
+        rankings['elo_scaled'] = std_scaler.fit_transform(rankings[['elo']])
+        rankings['fpi_scaled'] = std_scaler.fit_transform(rankings[['fpi']])
+
+        data = pd.merge(sched, rankings[['team', 'rank', 'elo_scaled', 'fpi_scaled']],
+                        left_on='t1',
+                        right_on='team')
+        data.rename(columns={'elo_scaled': 't1_elo', 'fpi_scaled': 't1_fpi',
+                             'rank': 't1_rank'},
+                    inplace=True)
+        data.drop(columns=['team'], inplace=True)
+
+        data = pd.merge(data, rankings[['team', 'rank', 'elo_scaled', 'fpi_scaled']],
+                        left_on='t2',
+                        right_on='team')
+        data.rename(columns={'elo_scaled': 't2_elo', 'fpi_scaled': 't2_fpi',
+                             'rank': 't2_rank'},
+                    inplace=True)
+        data.drop(columns=['team'], inplace=True)
+
+        HOME_BOOST = .75
+        SHORT_WEEK_PENATLY = .66
+        WORST_TEAMS_PENALTY = .4
+        INTL_PRIOR_PENALTY = .5
+
+        sim_data = prep_data(data, HOME_BOOST, SHORT_WEEK_PENATLY,
+                             WORST_TEAMS_PENALTY, INTL_PRIOR_PENALTY)
+
+        m1_picks = []
+
+        greedy = simulate_greedy(sim_data, 'score', picked_teams_inp=m1_picks,
+                                 bottom_up=False)
+
+        bu_greedy = simulate_greedy(sim_data, 'score', picked_teams_inp=m1_picks,
+                                    bottom_up=True)
+
+        sims = {}
+        for i in tqdm(range(10000)):
+            try:
+                picks = simulate_random(sim_data, 'score', top_n=3,
+                                        picked_teams_inp=m1_picks)
+            except:
+                continue
+            if picks.score.sum() > 109:
+                sims[picks.score.sum()] = picks
+
+        import ipdb; ipdb.set_trace(context=25)
+        print(greedy)
+        print(bu_greedy)
+        print(sims[0])
+
+
 if __name__ == '__main__':
-    schedule_grid_path = '~/GitHub/nfl-survivor/data/schedule_grid.csv'
-    schedule_processed_path = '~/GitHub/nfl-survivor/data/schedule_processed.csv'
-    rank_path = '~/GitHub/nfl-survivor/data/ranks.csv'
-
-    schedule_raw = pd.read_csv(schedule_grid_path, index_col=0)
-
-    sched = pd.read_csv(schedule_processed_path, parse_dates=['date'])
-    sched = get_days_off(sched)
-    sched['days_off_diff'] = sched.t1_days_off - sched.t2_days_off
-
-    std_scaler = StandardScaler()
-    mm_scaler = MinMaxScaler()
-
-    rankings = pd.read_csv(rank_path)
-    rankings['elo_scaled'] = std_scaler.fit_transform(rankings[['elo']])
-    rankings['fpi_scaled'] = std_scaler.fit_transform(rankings[['FPI']])
-
-    data = pd.merge(sched, rankings[['team', 'Rank', 'elo_scaled', 'fpi_scaled']],
-                    left_on='t1',
-                    right_on='team')
-    data.rename(columns={'elo_scaled': 't1_elo', 'fpi_scaled': 't1_fpi',
-                         'Rank': 't1_rank'},
-                inplace=True)
-    data.drop(columns=['team'], inplace=True)
-
-    data = pd.merge(data, rankings[['team', 'Rank', 'elo_scaled', 'fpi_scaled']],
-                    left_on='t2',
-                    right_on='team')
-    data.rename(columns={'elo_scaled': 't2_elo', 'fpi_scaled': 't2_fpi',
-                         'Rank': 't2_rank'},
-                inplace=True)
-    data.drop(columns=['team'], inplace=True)
-
-    HOME_BOOST = .75
-    SHORT_WEEK_PENATLY = .66
-    WORST_TEAMS_PENALTY = .4
-    INTL_PRIOR_PENALTY = .5
-
-    sim_data = prep_data(data, HOME_BOOST, SHORT_WEEK_PENATLY,
-                         WORST_TEAMS_PENALTY, INTL_PRIOR_PENALTY)
-
-    m1_picks = []
-
-    greedy = simulate_greedy(sim_data, 'score', picked_teams_inp=m1_picks,
-                             bottom_up=False)
-
-    bu_greedy = simulate_greedy(sim_data, 'score', picked_teams_inp=m1_picks,
-                                bottom_up=True)
-
-    sims = {}
-    for i in tqdm(range(10000)):
-        try:
-            picks = simulate_random(sim_data, 'score', top_n=3,
-                                    picked_teams_inp=m1_picks)
-        except:
-            continue
-        if picks.score.sum() > 115:
-            sims[picks.score.sum()] = picks
+    main()
